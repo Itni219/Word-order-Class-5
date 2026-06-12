@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sentence Order Game – Class 5</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal: #1D9E75; --teal-dark: #0F6E56; --teal-light: #E1F5EE;
+  --blue-bg: #E6F1FB; --blue-fg: #0C447C; --blue-border: #85B7EB;
+  --red-bg: #FCEBEB; --red-fg: #A32D2D; --red-border: #F09595;
+  --green-bg: #EAF3DE; --green-fg: #3B6D11; --green-border: #97C459;
+  --amber: #EF9F27; --amber-bg: #FAEEDA; --amber-fg: #633806;
+  --bg: #f5f5f3; --surface: #fff; --border: rgba(0,0,0,0.11);
+  --text: #1a1a18; --muted: #5f5e5a;
+  --radius: 8px; --radius-lg: 12px;
+  --p1: #378ADD; --p2: #E24B4A;
+}
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+.page { max-width: 680px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+
+/* ── HEADER ── */
+.site-header { background: var(--teal); color: #fff; padding: 0.9rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between; }
+.site-header h1 { font-size: 16px; font-weight: 500; }
+.site-header .sub { font-size: 11px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.05em; }
+.header-right { display: flex; gap: 8px; }
+.hdr-btn { background: rgba(255,255,255,0.18); border: none; color: #fff;
+  border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; }
+.hdr-btn:active { background: rgba(255,255,255,0.3); }
+
+/* ── SETUP SCREEN ── */
+.setup-title { font-size: 22px; font-weight: 500; margin-bottom: 0.3rem; color: var(--text); }
+.setup-sub   { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; }
+.mode-grid   { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
+.mode-btn {
+  padding: 1rem 0.5rem; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border); background: var(--surface);
+  cursor: pointer; text-align: center; transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-btn .icon { font-size: 28px; margin-bottom: 6px; }
+.mode-btn .label { font-size: 13px; font-weight: 500; color: var(--text); }
+.mode-btn .desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.mode-btn.selected { border-color: var(--teal); background: var(--teal-light); }
+.mode-btn:active   { background: var(--teal-light); }
+
+.name-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.25rem; }
+.name-field  { display: flex; align-items: center; gap: 10px; }
+.player-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot-1 { background: var(--p1); }
+.dot-2 { background: var(--p2); }
+.dot-solo { background: var(--teal); }
+.name-input {
+  flex: 1; padding: 11px 14px; font-size: 16px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); outline: none;
+  -webkit-appearance: none;
+}
+.name-input:focus { border-color: var(--teal); }
+
+.btn { display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+  border: none; border-radius: var(--radius); cursor: pointer; text-align: center;
+  -webkit-tap-highlight-color: transparent; transition: opacity 0.15s; }
+.btn:active { opacity: 0.8; }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+.btn-primary  { background: var(--teal); color: #fff; }
+.btn-secondary { background: var(--surface); color: var(--muted);
+  border: 1px solid var(--border); font-weight: 400; font-size: 14px; padding: 11px; margin-top: 8px; }
+
+/* ── GAME SCREEN ── */
+.game-header { display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px; }
+.game-progress { font-size: 13px; color: var(--muted); }
+.score-row { display: flex; gap: 8px; }
+.score-pill { border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+.score-solo { background: var(--teal-light); color: var(--teal-dark); }
+.score-p1   { background: #DDEEFF; color: #0C447C; }
+.score-p2   { background: #FFE5E5; color: #A32D2D; }
+
+.active-banner { border-radius: var(--radius); padding: 8px 14px; margin-bottom: 0.75rem;
+  font-size: 14px; font-weight: 600; display: none; }
+.banner-p1 { background: #DDEEFF; color: #0C447C; }
+.banner-p2 { background: #FFE5E5; color: #A32D2D; }
+
+.timer-wrap { height: 6px; background: #e0e0de; border-radius: 3px;
+  margin-bottom: 0.9rem; overflow: hidden; }
+.timer-bar  { height: 6px; width: 100%; border-radius: 3px;
+  transition: width 0.1s linear, background 0.4s; }
+
+.sentence-card { background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 0.85rem; }
+.card-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.drop-zone { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; padding: 10px;
+  background: var(--bg); border-radius: var(--radius);
+  border: 1.5px dashed rgba(0,0,0,0.15); }
+.drop-zone.filled { border-style: solid; border-color: rgba(0,0,0,0.22); }
+
+.word-bank { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; min-height: 50px; }
+.tile { padding: 10px 15px; border-radius: var(--radius); font-size: 17px;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s; }
+.tile:active { transform: scale(0.95); }
+.tile-bank   { background: var(--blue-bg); border: 0.5px solid var(--blue-border); color: var(--blue-fg); }
+.tile-placed { background: var(--surface); border: 0.5px solid var(--border); color: var(--text); }
+.tile-hidden { visibility: hidden; }
+
+.btn-row { display: flex; gap: 8px; margin-bottom: 0.75rem; }
+.btn-row .btn { flex: 1; padding: 12px; font-size: 15px; }
+
+.feedback { padding: 12px 14px; border-radius: var(--radius); font-size: 15px;
+  display: none; margin-bottom: 0.75rem; }
+.fb-correct { background: var(--green-bg); color: var(--green-fg); border: 0.5px solid var(--green-border); }
+.fb-wrong   { background: var(--red-bg);   color: var(--red-fg);   border: 0.5px solid var(--red-border); }
+.fb-time    { background: var(--amber-bg); color: var(--amber-fg); border: 0.5px solid #FAC775; }
+.streak-badge { display: inline-block; background: var(--amber-bg); color: var(--amber-fg);
+  border-radius: 20px; padding: 2px 9px; font-size: 12px; font-weight: 600; margin-left: 6px; }
+
+/* ── END SCREEN ── */
+.end-wrap { text-align: center; padding: 1.5rem 0; }
+.end-emoji { font-size: 48px; margin-bottom: 0.5rem; }
+.end-title { font-size: 22px; font-weight: 500; margin-bottom: 0.3rem; }
+.end-sub   { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; }
+.score-cards { display: grid; gap: 10px; margin-bottom: 1.5rem; }
+.score-cards.two { grid-template-columns: 1fr 1fr; }
+.score-card { border-radius: var(--radius-lg); padding: 1rem; }
+.score-card .sc-name { font-size: 12px; margin-bottom: 4px; opacity: 0.75; }
+.score-card .sc-val  { font-size: 32px; font-weight: 700; }
+.score-card .sc-max  { font-size: 12px; opacity: 0.65; }
+.sc-solo { background: var(--teal-light); color: var(--teal-dark); }
+.sc-p1   { background: #DDEEFF; color: #0C447C; }
+.sc-p2   { background: #FFE5E5; color: #A32D2D; }
+.winner-banner { background: var(--amber-bg); color: var(--amber-fg);
+  border-radius: var(--radius); padding: 10px 14px; font-size: 15px; font-weight: 600;
+  margin-bottom: 1.25rem; }
+.end-btns { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── LEADERBOARD ── */
+.board-header { display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem; }
+.board-title  { font-size: 20px; font-weight: 500; }
+.board-refresh { font-size: 13px; color: var(--teal); cursor: pointer; padding: 6px 10px;
+  -webkit-tap-highlight-color: transparent; }
+.board-row { display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+  border-radius: var(--radius); margin-bottom: 6px;
+  background: var(--surface); border: 0.5px solid var(--border); }
+.board-row.me { background: var(--teal-light); border-color: #9FE1CB; }
+.board-rank  { width: 26px; font-size: 15px; font-weight: 700; color: var(--muted); text-align: center; }
+.board-rank.gold   { color: #BA7517; }
+.board-rank.silver { color: #888780; }
+.board-rank.bronze { color: #854F0B; }
+.board-name  { flex: 1; font-size: 14px; font-weight: 500; }
+.board-meta  { font-size: 11px; color: var(--muted); }
+.board-pts   { font-size: 15px; font-weight: 700; color: var(--teal-dark); min-width: 48px; text-align: right; }
+.board-empty { text-align: center; color: var(--muted); padding: 2rem 0; font-size: 14px; }
+.board-loading { text-align: center; color: var(--muted); padding: 1.5rem 0; font-size: 14px; }
+
+.tab-row { display: flex; gap: 6px; margin-bottom: 1rem; }
+.tab { flex: 1; padding: 8px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+.tab.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div>
+    <div class="site-header h1" style="font-size:16px;font-weight:500">Sentence Order Game</div>
+    <div class="sub">Class 5 English</div>
+  </div>
+  <div class="header-right">
+    <button class="hdr-btn" onclick="showLeaderboard()">🏆 Scores</button>
+    <button class="hdr-btn" onclick="showSetup()">⌂ Home</button>
+  </div>
+</header>
+
+<!-- ══ SETUP ══ -->
+<div id="screen-setup" class="screen active">
+  <div class="page">
+    <p class="setup-title">Choose your mode</p>
+    <p class="setup-sub">How do you want to play?</p>
+
+    <div class="mode-grid">
+      <div class="mode-btn" id="mode-solo" onclick="selectMode('solo')">
+        <div class="icon">👤</div>
+        <div class="label">Solo</div>
+        <div class="desc">Play alone</div>
+      </div>
+      <div class="mode-btn" id="mode-coop" onclick="selectMode('coop')">
+        <div class="icon">🤝</div>
+        <div class="label">Together</div>
+        <div class="desc">One shared score</div>
+      </div>
+      <div class="mode-btn" id="mode-versus" onclick="selectMode('versus')">
+        <div class="icon">⚔️</div>
+        <div class="label">Versus</div>
+        <div class="desc">Take turns, compete</div>
+      </div>
+    </div>
+
+    <div class="name-fields" id="name-fields">
+      <div class="name-field" id="field-p1">
+        <div class="player-dot dot-solo" id="dot-p1"></div>
+        <input class="name-input" id="name-p1" type="text" placeholder="Your name"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="name-field" id="field-p2" style="display:none">
+        <div class="player-dot dot-2" id="dot-p2"></div>
+        <input class="name-input" id="name-p2" type="text" placeholder="Partner's name"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="start-btn" onclick="startGame()">Start game</button>
+    <button class="btn btn-secondary" onclick="showLeaderboard()">🏆 View leaderboard</button>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="screen-game" class="screen">
+  <div class="page">
+    <div class="game-header">
+      <div class="game-progress">
+        Question <span id="g-qnum">1</span> of <span id="g-qtotal">10</span>
+      </div>
+      <div class="score-row" id="score-row"></div>
+    </div>
+
+    <div class="active-banner" id="active-banner"></div>
+    <div class="timer-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+
+    <div class="sentence-card">
+      <div class="card-label">Put the words in the correct order</div>
+      <div class="drop-zone" id="drop-zone"></div>
+    </div>
+
+    <div class="word-bank" id="word-bank"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" style="flex:0.6" onclick="clearDrop()">Clear</button>
+      <button class="btn btn-primary" id="btn-check" onclick="handleCheck()">Check answer</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-secondary" style="margin-top:4px" onclick="showLeaderboard()">🏆 Leaderboard</button>
+  </div>
+</div>
+
+<!-- ══ END ══ -->
+<div id="screen-end" class="screen">
+  <div class="page">
+    <div class="end-wrap">
+      <div class="end-emoji" id="end-emoji">🎉</div>
+      <div class="end-title" id="end-title">Well done!</div>
+      <div class="end-sub"  id="end-sub"></div>
+      <div class="score-cards" id="score-cards"></div>
+      <div class="winner-banner" id="winner-banner" style="display:none"></div>
+      <div class="end-btns">
+        <button class="btn btn-primary" onclick="showLeaderboard()">🏆 See leaderboard</button>
+        <button class="btn btn-secondary" onclick="showSetup()">Play again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEADERBOARD ══ -->
+<div id="screen-board" class="screen">
+  <div class="page">
+    <div class="board-header">
+      <div class="board-title">🏆 Leaderboard</div>
+      <div class="board-refresh" onclick="loadBoard()">↻ Refresh</div>
+    </div>
+    <div class="tab-row">
+      <div class="tab active" id="tab-all"    onclick="switchTab('all')">All</div>
+      <div class="tab"        id="tab-solo"   onclick="switchTab('solo')">Solo</div>
+      <div class="tab"        id="tab-coop"   onclick="switchTab('coop')">Together</div>
+      <div class="tab"        id="tab-versus" onclick="switchTab('versus')">Versus</div>
+    </div>
+    <div id="board-list"></div>
+    <button class="btn btn-secondary" style="margin-top:1rem" onclick="goBackFromBoard()">← Back</button>
+  </div>
+</div>
+
+<script>
+// ── SENTENCES ────────────────────────────────────────────────────────────────
+const ALL_SENTENCES = [
+  { words: ["She", "has", "a", "red", "bag"] },
+  { words: ["The", "cat", "sits", "on", "the", "mat"] },
+  { words: ["I", "like", "pizza", "and", "chips"] },
+  { words: ["He", "plays", "football", "every", "day"] },
+  { words: ["We", "go", "to", "school", "by", "bus"] },
+  { words: ["My", "dog", "is", "very", "friendly"] },
+  { words: ["She", "reads", "books", "in", "her", "room"] },
+  { words: ["They", "eat", "lunch", "at", "twelve", "o'clock"] },
+  { words: ["The", "boy", "has", "a", "blue", "bike"] },
+  { words: ["It", "is", "sunny", "and", "warm", "today"] },
+  { words: ["I", "drink", "juice", "every", "morning"] },
+  { words: ["His", "sister", "is", "ten", "years", "old"] },
+  { words: ["We", "watch", "TV", "after", "dinner"] },
+  { words: ["The", "teacher", "writes", "on", "the", "board"] },
+  { words: ["My", "favourite", "colour", "is", "green"] },
+  { words: ["He", "walks", "to", "school", "every", "morning"] },
+  { words: ["She", "likes", "cats", "and", "rabbits"] },
+  { words: ["They", "live", "in", "a", "big", "house"] },
+  { words: ["The", "children", "play", "in", "the", "park"] },
+  { words: ["My", "mum", "makes", "breakfast", "every", "day"] },
+  { words: ["I", "brush", "my", "teeth", "twice", "a", "day"] },
+  { words: ["He", "speaks", "English", "very", "well"] },
+  { words: ["We", "have", "English", "on", "Monday", "and", "Wednesday"] },
+  { words: ["She", "always", "helps", "her", "mum", "in", "the", "kitchen"] },
+  { words: ["The", "dog", "barks", "at", "the", "cat"] },
+  { words: ["She", "is", "reading", "a", "book", "now"] },
+  { words: ["They", "are", "playing", "football", "in", "the", "garden"] },
+  { words: ["He", "is", "helping", "her", "with", "the", "homework"] },
+  { words: ["I", "am", "writing", "a", "letter", "to", "him"] },
+  { words: ["We", "are", "watching", "them", "dance"] },
+  { words: ["She", "is", "calling", "me", "on", "the", "phone"] },
+  { words: ["They", "are", "not", "listening", "to", "us"] },
+  { words: ["He", "is", "giving", "it", "to", "her"] },
+  { words: ["I", "am", "waiting", "for", "them", "outside"] },
+  { words: ["We", "are", "showing", "him", "our", "new", "classroom"] },
+  { words: ["She", "is", "carrying", "it", "for", "me"] },
+  { words: ["The", "baby", "is", "sleeping", "in", "her", "room"] },
+  { words: ["My", "brother", "is", "playing", "a", "computer", "game"] },
+  { words: ["They", "are", "eating", "pizza", "right", "now"] },
+  { words: ["I", "am", "doing", "my", "homework", "at", "the", "moment"] },
+  { words: ["He", "is", "looking", "at", "her"] },
+  { words: ["She", "is", "talking", "to", "him", "right", "now"] },
+  { words: ["Can", "you", "help", "me", "with", "this"] },
+  { words: ["I", "am", "telling", "you", "the", "truth"] },
+  { words: ["She", "is", "teaching", "us", "English"] },
+  { words: ["They", "are", "waiting", "for", "him", "outside"] },
+  { words: ["We", "are", "cooking", "dinner", "for", "them"] },
+  { words: ["He", "always", "shares", "his", "lunch", "with", "her"] },
+  { words: ["My", "teacher", "gives", "us", "homework", "every", "week"] },
+  { words: ["She", "is", "sending", "him", "a", "message", "now"] },
+];
+
+const Q_PER_PLAYER = 10;   // each player answers 10 → versus total = 20
+const TIME_LIMIT   = 20;
+const STORAGE_KEY  = 'sentence_game_scores_v1';
+
+// ── RNG ───────────────────────────────────────────────────────────────────────
+function makeSeed() {
+  const t = Date.now();
+  const r = (typeof crypto !== 'undefined' && crypto.getRandomValues)
+    ? crypto.getRandomValues(new Uint32Array(1))[0]
+    : Math.floor(Math.random() * 0xffffffff);
+  return (t ^ r) >>> 0;
+}
+function seededRng(seed) {
+  let s = seed || 1;
+  return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 0x100000000; };
+}
+function shuffle(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let mode = 'solo';         // solo | coop | versus
+let names = ['', ''];
+let questions = [];        // 20 sentences for versus, 10 otherwise
+let current = 0;           // global question index
+let scores = [0, 0];       // [p1, p2] or [solo, _] or [coop, _]
+let streaks = [0, 0];
+let timer = null, timeLeft = 0, answered = false;
+let rng;
+let prevScreen = 'setup';
+
+// In versus: player 0 answers questions 0,2,4,… player 1 answers 1,3,5,…
+function activePlayer() {
+  if (mode !== 'versus') return 0;
+  return current % 2;
+}
+function totalQuestions() {
+  return mode === 'versus' ? Q_PER_PLAYER * 2 : Q_PER_PLAYER;
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('mode-' + m).classList.add('selected');
+  const field2 = document.getElementById('field-p2');
+  const dot1   = document.getElementById('dot-p1');
+  if (m === 'solo') {
+    field2.style.display = 'none';
+    dot1.className = 'player-dot dot-solo';
+    document.getElementById('name-p1').placeholder = 'Your name';
+  } else {
+    field2.style.display = 'flex';
+    dot1.className = 'player-dot dot-1';
+    document.getElementById('name-p1').placeholder = m === 'coop' ? 'Player 1 name' : 'Player 1 name';
+    document.getElementById('name-p2').placeholder = m === 'coop' ? 'Player 2 name' : 'Player 2 name';
+  }
+}
+
+function showSetup() { prevScreen = 'setup'; show('setup'); }
+
+// ── GAME START ────────────────────────────────────────────────────────────────
+function startGame() {
+  const n1 = document.getElementById('name-p1').value.trim();
+  const n2 = document.getElementById('name-p2').value.trim();
+  if (!n1) { alert('Please enter your name.'); return; }
+  if (mode !== 'solo' && !n2) { alert("Please enter your partner's name."); return; }
+  names = [n1 || 'Player 1', n2 || 'Player 2'];
+
+  rng = seededRng(makeSeed());
+  const total = totalQuestions();
+  questions = shuffle(ALL_SENTENCES, rng).slice(0, total);
+  // For versus: interleave so each player gets unique sentences
+  // (slice already ensures 20 unique sentences from pool of 50)
+
+  current = 0; scores = [0, 0]; streaks = [0, 0]; answered = false;
+  buildScoreRow();
+  show('game');
+  loadQuestion();
+}
+
+// ── SCORE ROW ─────────────────────────────────────────────────────────────────
+function buildScoreRow() {
+  const row = document.getElementById('score-row');
+  if (mode === 'solo') {
+    row.innerHTML = `<div class="score-pill score-solo">Score: <span id="sp-0">${scores[0]}</span></div>`;
+  } else if (mode === 'coop') {
+    row.innerHTML = `<div class="score-pill score-solo">Team score: <span id="sp-0">${scores[0]}</span></div>`;
+  } else {
+    row.innerHTML =
+      `<div class="score-pill score-p1">${names[0]}: <span id="sp-0">${scores[0]}</span></div>` +
+      `<div class="score-pill score-p2">${names[1]}: <span id="sp-1">${scores[1]}</span></div>`;
+  }
+}
+
+function updateScoreDisplay() {
+  const s0 = document.getElementById('sp-0');
+  const s1 = document.getElementById('sp-1');
+  if (s0) s0.textContent = scores[0];
+  if (s1) s1.textContent = scores[1];
+}
+
+// ── LOAD QUESTION ─────────────────────────────────────────────────────────────
+function loadQuestion() {
+  answered = false;
+  clearInterval(timer);
+  const q = questions[current];
+  const total = totalQuestions();
+  const ap = activePlayer();
+
+  // progress: show personal progress in versus
+  if (mode === 'versus') {
+    const personalQ = Math.floor(current / 2) + 1;
+    document.getElementById('g-qnum').textContent = personalQ;
+    document.getElementById('g-qtotal').textContent = Q_PER_PLAYER;
+  } else {
+    document.getElementById('g-qnum').textContent = current + 1;
+    document.getElementById('g-qtotal').textContent = Q_PER_PLAYER;
+  }
+
+  // active banner
+  const banner = document.getElementById('active-banner');
+  if (mode === 'versus') {
+    banner.style.display = 'block';
+    banner.className = 'active-banner ' + (ap === 0 ? 'banner-p1' : 'banner-p2');
+    banner.textContent = names[ap] + "'s turn";
+  } else {
+    banner.style.display = 'none';
+  }
+
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('btn-check').textContent = 'Check answer';
+
+  const drop = document.getElementById('drop-zone');
+  drop.innerHTML = ''; drop.classList.remove('filled');
+
+  const bank = document.getElementById('word-bank');
+  bank.innerHTML = '';
+  shuffle(q.words, rng).forEach(word => {
+    const t = makeTile(word, 'bank');
+    bank.appendChild(t);
+  });
+
+  startTimer();
+}
+
+// ── TILES ─────────────────────────────────────────────────────────────────────
+function makeTile(word, type) {
+  const t = document.createElement('div');
+  t.className = 'tile tile-' + type;
+  t.textContent = word;
+  if (type === 'bank')   t.addEventListener('click', () => tapBank(t));
+  else                   t.addEventListener('click', () => tapPlaced(t));
+  return t;
+}
+function tapBank(tile) {
+  if (answered) return;
+  tile.classList.add('tile-hidden');
+  const drop = document.getElementById('drop-zone');
+  const p = makeTile(tile.textContent, 'placed');
+  p._origin = tile;
+  drop.appendChild(p);
+  drop.classList.add('filled');
+}
+function tapPlaced(tile) {
+  if (answered) return;
+  tile._origin.classList.remove('tile-hidden');
+  tile.remove();
+  const drop = document.getElementById('drop-zone');
+  if (!drop.querySelector('.tile-placed')) drop.classList.remove('filled');
+}
+function clearDrop() {
+  if (answered) return;
+  const drop = document.getElementById('drop-zone');
+  [...drop.querySelectorAll('.tile-placed')].forEach(t => {
+    t._origin.classList.remove('tile-hidden'); t.remove();
+  });
+  drop.classList.remove('filled');
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────────
+function startTimer() {
+  timeLeft = TIME_LIMIT; updateBar();
+  timer = setInterval(() => {
+    timeLeft--; updateBar();
+    if (timeLeft <= 0) { clearInterval(timer); onTimeout(); }
+  }, 1000);
+}
+function updateBar() {
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = (timeLeft / TIME_LIMIT * 100) + '%';
+  bar.style.background = timeLeft <= 5 ? '#E24B4A' : timeLeft <= 10 ? '#EF9F27' : '#1D9E75';
+}
+function onTimeout() {
+  if (answered) return;
+  answered = true;
+  const ap = activePlayer();
+  streaks[ap] = 0;
+  showFeedback('time', 'Time\'s up!  Correct: ' + questions[current].words.join(' '));
+}
+
+// ── CHECK ─────────────────────────────────────────────────────────────────────
+function handleCheck() {
+  if (answered) { nextQuestion(); return; }
+  clearInterval(timer);
+  answered = true;
+  const ap = activePlayer();
+  const placed  = [...document.getElementById('drop-zone').querySelectorAll('.tile-placed')].map(t => t.textContent);
+  const correct = questions[current].words;
+  const ok = placed.join(' ') === correct.join(' ');
+
+  if (ok) {
+    const pts = timeLeft >= 15 ? 3 : timeLeft >= 8 ? 2 : 1;
+    if (mode === 'coop') scores[0] += pts; else scores[ap] += pts;
+    streaks[ap]++;
+    updateScoreDisplay();
+    const label = pts === 3 ? '+3 (super fast!)' : pts === 2 ? '+2' : '+1';
+    const streakTxt = streaks[ap] >= 3
+      ? '<span class="streak-badge">🔥 ' + streaks[ap] + ' in a row!</span>' : '';
+    showFeedback('correct', 'Correct! ' + label + streakTxt);
+  } else {
+    streaks[ap] = 0;
+    showFeedback('wrong', 'Not quite.  Correct: ' + correct.join(' '));
+  }
+
+  const total = totalQuestions();
+  document.getElementById('btn-check').textContent =
+    current < total - 1 ? (mode === 'versus' ? 'Next →' : 'Next question') : 'See results';
+}
+
+function showFeedback(type, msg) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (type === 'correct' ? 'fb-correct' : type === 'wrong' ? 'fb-wrong' : 'fb-time');
+  fb.innerHTML = msg;
+  fb.style.display = 'block';
+}
+
+// ── NEXT ──────────────────────────────────────────────────────────────────────
+function nextQuestion() {
+  current++;
+  if (current >= totalQuestions()) { endGame(); return; }
+  loadQuestion();
+}
+
+// ── END ───────────────────────────────────────────────────────────────────────
+function endGame() {
+  clearInterval(timer);
+  saveScore();
+
+  const max = Q_PER_PLAYER * 3;
+  let emoji = '💪', title = 'Keep practising!';
+
+  if (mode === 'solo') {
+    const pct = scores[0] / max;
+    emoji = pct >= 0.8 ? '🏆' : pct >= 0.5 ? '👍' : '💪';
+    title = pct >= 0.8 ? 'Excellent work!' : pct >= 0.5 ? 'Good job!' : 'Keep practising!';
+    document.getElementById('score-cards').className = 'score-cards';
+    document.getElementById('score-cards').innerHTML =
+      `<div class="score-card sc-solo">
+        <div class="sc-name">${names[0]}</div>
+        <div class="sc-val">${scores[0]}</div>
+        <div class="sc-max">out of ${max} pts</div>
+      </div>`;
+    document.getElementById('end-sub').textContent = '';
+    document.getElementById('winner-banner').style.display = 'none';
+
+  } else if (mode === 'coop') {
+    const pct = scores[0] / max;
+    emoji = pct >= 0.8 ? '🏆' : pct >= 0.5 ? '👍' : '💪';
+    title = pct >= 0.8 ? 'Amazing teamwork!' : pct >= 0.5 ? 'Good team effort!' : 'Keep practising together!';
+    document.getElementById('score-cards').className = 'score-cards';
+    document.getElementById('score-cards').innerHTML =
+      `<div class="score-card sc-solo">
+        <div class="sc-name">${names[0]} &amp; ${names[1]}</div>
+        <div class="sc-val">${scores[0]}</div>
+        <div class="sc-max">out of ${max} pts</div>
+      </div>`;
+    document.getElementById('end-sub').textContent = '';
+    document.getElementById('winner-banner').style.display = 'none';
+
+  } else {
+    // versus
+    title = 'Game over!';
+    emoji = '⚔️';
+    document.getElementById('score-cards').className = 'score-cards two';
+    document.getElementById('score-cards').innerHTML =
+      `<div class="score-card sc-p1">
+        <div class="sc-name">${names[0]}</div>
+        <div class="sc-val">${scores[0]}</div>
+        <div class="sc-max">out of ${max} pts</div>
+      </div>
+      <div class="score-card sc-p2">
+        <div class="sc-name">${names[1]}</div>
+        <div class="sc-val">${scores[1]}</div>
+        <div class="sc-max">out of ${max} pts</div>
+      </div>`;
+    const wb = document.getElementById('winner-banner');
+    wb.style.display = 'block';
+    if (scores[0] > scores[1])      wb.textContent = '🥇 ' + names[0] + ' wins!';
+    else if (scores[1] > scores[0]) wb.textContent = '🥇 ' + names[1] + ' wins!';
+    else                            wb.textContent = "🤝 It's a draw!";
+    document.getElementById('end-sub').textContent = '';
+  }
+
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = title;
+  show('end');
+}
+
+// ── SCORES (localStorage — shared via same origin on GitHub Pages) ────────────
+function saveScore() {
+  try {
+    const all = loadScores();
+    const ts  = Date.now();
+    const max = Q_PER_PLAYER * 3;
+
+    if (mode === 'solo') {
+      all.push({ name: names[0], score: scores[0], max, mode: 'solo', ts });
+    } else if (mode === 'coop') {
+      all.push({ name: names[0] + ' & ' + names[1], score: scores[0], max, mode: 'coop', ts });
+    } else {
+      // save both players individually
+      all.push({ name: names[0], score: scores[0], max, mode: 'versus', ts });
+      all.push({ name: names[1], score: scores[1], max, mode: 'versus', ts });
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  } catch(e) {}
+}
+
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+let boardTab = 'all';
+
+function switchTab(t) {
+  boardTab = t;
+  ['all','solo','coop','versus'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('active', id === t);
+  });
+  renderBoard();
+}
+
+function showLeaderboard() {
+  prevScreen = document.querySelector('.screen.active').id.replace('screen-', '');
+  loadBoard();
+  show('board');
+}
+
+function loadBoard() { renderBoard(); }
+
+function renderBoard() {
+  const all = loadScores();
+  const filtered = boardTab === 'all' ? all : all.filter(e => e.mode === boardTab);
+  const sorted   = [...filtered].sort((a, b) => b.score - a.score);
+  const list     = document.getElementById('board-list');
+
+  if (!sorted.length) {
+    list.innerHTML = '<div class="board-empty">No scores yet — be the first!</div>'; return;
+  }
+
+  const medals  = ['gold','silver','bronze'];
+  const symbols = ['🥇','🥈','🥉'];
+  const myNames = names.filter(Boolean);
+
+  list.innerHTML = sorted.slice(0, 20).map((e, i) => {
+    const rankClass  = i < 3 ? medals[i] : '';
+    const rankSymbol = i < 3 ? symbols[i] : (i + 1) + '.';
+    const isMe = myNames.some(n => e.name === n || e.name.includes(n));
+    const pct  = Math.round(e.score / e.max * 100);
+    const modeLabel = e.mode === 'solo' ? '👤' : e.mode === 'coop' ? '🤝' : '⚔️';
+    const date = new Date(e.ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+    return `<div class="board-row${isMe ? ' me' : ''}">
+      <div class="board-rank ${rankClass}">${rankSymbol}</div>
+      <div>
+        <div class="board-name">${e.name}</div>
+        <div class="board-meta">${modeLabel} ${e.mode} · ${date} · ${pct}%</div>
+      </div>
+      <div class="board-pts">${e.score} pts</div>
+    </div>`;
+  }).join('');
+}
+
+function goBackFromBoard() {
+  if (prevScreen === 'end')   { show('end');   return; }
+  if (prevScreen === 'game')  { show('game');  return; }
+  show('setup');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// pre-select solo on load
+selectMode('solo');
+</script>
+</body>
+</html>
